@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HW | Weather Syntax</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background-color: #050B14; color: #F8FAFC; display: flex; justify-content: center; font-family: 'Inter', sans-serif; }
+        #app-container { width: 100%; max-width: 430px; height: 100vh; position: relative; overflow: hidden; background: #050B14; border-left: 1px solid #13284A; border-right: 1px solid #13284A;}
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; padding: 20px; }
+        .screen.active { display: flex; }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .shake { animation: shake 0.4s; }
+        .glass { background: rgba(10, 21, 42, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #13284A; }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        
+        <div class="h-16 w-full flex items-center justify-between px-6 z-10 absolute top-0 left-0 glass">
+            <div class="text-xs font-bold text-[#00E5FF] tracking-widest font-['Rajdhani'] uppercase">WEATHER_RADAR</div>
+            <div class="flex gap-1" id="hearts-container">
+                <span class="text-[#EF4444] text-xl" id="h1"><i class="fa-solid fa-heart"></i></span>
+                <span class="text-[#EF4444] text-xl" id="h2"><i class="fa-solid fa-heart"></i></span>
+                <span class="text-[#EF4444] text-xl" id="h3"><i class="fa-solid fa-heart"></i></span>
+            </div>
+        </div>
+
+        <div class="pt-20 pb-6 w-full h-full relative" id="screens-container">
+            <!-- Screens injected by JS -->
+        </div>
+
+    </div>
+
+    <script>
+        const questions = [
+            // Past Cont vs Past Simple
+            { type: 'choice', q: 'I [BLANK] driving when the rain started.', opts: ['was', 'were'], correct: 0 },
+            { type: 'choice', q: 'We were sleeping [BLANK] the tornado hit.', opts: ['while', 'when'], correct: 1 },
+            { type: 'choice', q: '[BLANK] I was eating, the lightning struck.', opts: ['When', 'While'], correct: 1 },
+            { type: 'choice', q: 'The camera fell while he [BLANK] speaking.', opts: ['was', 'were'], correct: 0 },
+            { type: 'choice', q: 'They [BLANK] walking in the park when the flood started.', opts: ['was', 'were'], correct: 1 },
+            
+            // Gap Fill
+            { type: 'gap', q: 'The lightning STR___ the tree.', answer: 'struck' },
+            { type: 'gap', q: 'I was watching TV W___ the earthquake started.', answer: 'when' },
+            { type: 'gap', q: 'We W___ eating dinner when the lights went out.', answer: 'were' },
+            { type: 'gap', q: 'W____ she was driving, it rained.', answer: 'while' },
+            { type: 'gap', q: 'The past simple of "fall" is F___.', answer: 'fell' },
+            
+            // Unscramble (simplified)
+            { type: 'choice', q: 'Which is correct?', opts: ['I was sleep when it rained.', 'I was sleeping when it rained.'], correct: 1 },
+            { type: 'choice', q: 'Which is correct?', opts: ['While I was walking, I saw him.', 'When I was walking, I saw him.'], correct: 0 },
+            { type: 'choice', q: 'A dangerous spinning wind:', opts: ['Tornado', 'Flood'], correct: 0 },
+            { type: 'choice', q: 'Too much rain in the streets:', opts: ['Earthquake', 'Flood'], correct: 1 },
+            { type: 'choice', q: 'Final Check:', opts: ['They was running.', 'They were running.'], correct: 1 }
+        ];
+
+        let currentQ = 0;
+        let lives = 3;
+        const totalQ = questions.length;
+
+        function renderScreen() {
+            const container = document.getElementById('screens-container');
+            container.innerHTML = ''; 
+
+            if (currentQ >= totalQ) {
+                showResults();
+                return;
+            }
+
+            const q = questions[currentQ];
+            let html = `
+                <div class="screen active justify-center">
+                    <div class="text-center mb-8">
+                        <span class="text-[10px] text-[#00E5FF] font-['Rajdhani'] font-bold tracking-[0.3em] uppercase bg-[#00E5FF]/10 px-3 py-1 rounded">Fix Error ${currentQ + 1} / ${totalQ}</span>
+                        <h2 class="text-2xl font-bold mt-6 text-[#F8FAFC] leading-relaxed">`;
+            
+            if(q.type === 'gap') {
+                const parts = q.q.split('___');
+                if(parts.length > 1) {
+                    html += `${parts[0]}<span class="text-[#FACC15]">___</span>${parts[1]}</h2></div>`;
+                } else {
+                    html += `${q.q}</h2></div>`;
+                }
+            } else if (q.q.includes('[BLANK]')) {
+                const parts = q.q.split('[BLANK]');
+                html += `${parts[0]}<span class="text-[#FACC15]">___</span>${parts[1]}</h2></div>`;
+            } else {
+                html += `${q.q}</h2></div>`;
+            }
+
+            if (q.type === 'choice') {
+                html += `
+                    <div class="space-y-4 w-full mt-auto">
+                        <button class="w-full py-5 bg-[#0A152A] border border-[#13284A] rounded-xl font-bold text-lg text-white hover:border-[#00E5FF] transition-colors" onclick="checkAnswer(${q.correct === 0})">${q.opts[0]}</button>
+                        <button class="w-full py-5 bg-[#0A152A] border border-[#13284A] rounded-xl font-bold text-lg text-white hover:border-[#00E5FF] transition-colors" onclick="checkAnswer(${q.correct === 1})">${q.opts[1]}</button>
+                    </div>
+                `;
+            } else if (q.type === 'gap') {
+                html += `
+                    <div class="w-full flex flex-col items-center mt-auto">
+                        <input type="text" id="gap-input" class="w-full bg-[#0A152A] border-b-2 border-[#13284A] text-center text-3xl font-bold p-4 outline-none uppercase mb-8 text-[#00E5FF] focus:border-[#00E5FF]" placeholder="TYPE FIX" autocomplete="off">
+                        <button class="w-full py-5 bg-[#00E5FF] text-[#050B14] rounded-xl font-bold text-lg" onclick="checkGap('${q.answer}')">APPLY FIX</button>
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function checkAnswer(isCorrect) {
+            handleResult(isCorrect);
+        }
+
+        function checkGap(correctAnswer) {
+            const val = document.getElementById('gap-input').value.toLowerCase().trim();
+            handleResult(val === correctAnswer);
+        }
+
+        function handleResult(isCorrect) {
+            const screen = document.querySelector('.screen.active');
+            if (isCorrect) {
+                screen.innerHTML = `<div class="flex-1 flex flex-col items-center justify-center"><div class="text-7xl mb-4 text-[#10B981]"><i class="fa-solid fa-check-circle"></i></div><h2 class="text-3xl font-['Rajdhani'] font-bold text-[#10B981] tracking-widest uppercase">Syntax Valid</h2></div>`;
+                setTimeout(() => { currentQ++; renderScreen(); }, 800);
+            } else {
+                screen.classList.add('shake');
+                loseLife();
+                setTimeout(() => screen.classList.remove('shake'), 400);
+            }
+        }
+
+        function loseLife() {
+            lives--;
+            document.getElementById(`h${lives + 1}`).style.opacity = '0.2';
+            if (lives <= 0) {
+                setTimeout(showGameOver, 500);
+            }
+        }
+
+        function showGameOver() {
+            const container = document.getElementById('screens-container');
+            container.innerHTML = `
+                <div class="screen active justify-center items-center text-center">
+                    <div class="text-7xl mb-6 text-[#EF4444] animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <h2 class="text-4xl font-['Rajdhani'] font-bold text-[#EF4444] mb-2 tracking-widest uppercase">System Failure</h2>
+                    <p class="text-[#64748B] mb-10">Data corruption complete.</p>
+                    <button class="w-full py-5 border-2 border-[#EF4444] text-[#EF4444] rounded-xl font-bold text-lg uppercase tracking-widest" onclick="location.reload()">REBOOT RADAR</button>
+                </div>
+            `;
+        }
+
+        function showResults() {
+            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#00E5FF', '#FACC15', '#FFFFFF']});
+            const container = document.getElementById('screens-container');
+            const score = Math.round(( (totalQ - (3 - lives)) / totalQ ) * 100); 
+            container.innerHTML = `
+                <div class="screen active justify-center items-center text-center">
+                    <div class="text-7xl mb-6 text-[#10B981]"><i class="fa-solid fa-satellite-dish"></i></div>
+                    <h2 class="text-4xl font-['Rajdhani'] font-bold text-[#F8FAFC] mb-2 tracking-widest uppercase">Transmission Saved</h2>
+                    <p class="text-[#64748B] mb-6">Radar files completely restored.</p>
+                    <div class="text-7xl font-['Rajdhani'] font-black text-[#00E5FF] mb-12 drop-shadow-[0_0_15px_rgba(0,229,255,0.5)]">
+                        ${score}%
+                    </div>
+                    <button class="w-full py-5 bg-[#00E5FF] text-[#050B14] rounded-xl font-bold text-lg uppercase tracking-widest" onclick="location.reload()">CLOSE TERMINAL</button>
+                </div>
+            `;
+        }
+
+        renderScreen();
+    </script>
+</body>
+</html>
